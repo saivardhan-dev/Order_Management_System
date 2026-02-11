@@ -1,0 +1,35 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: order-service
+    mongodb:
+      uri: mongodb://localhost:27017/order_db
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+services:
+  product:
+    base-url: http://localhost:8081
+  payment:
+    base-url: http://localhost:8083
+
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      productService:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  retry:
+    instances:
+      productService:
+        maxAttempts: 3
+        waitDuration: 500ms

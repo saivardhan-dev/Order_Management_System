@@ -9,7 +9,7 @@ import java.util.List;
 public class UserModel {
 
     @Id
-    private String id; // userId
+    private String id;
     private String name;
     private List<Address> addresses;
 

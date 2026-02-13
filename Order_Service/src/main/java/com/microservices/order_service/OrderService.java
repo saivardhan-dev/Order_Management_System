@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -84,7 +86,7 @@ public class OrderService {
         order.setStatus(OrderStatus.PAYMENT_PENDING);
         order.setUpdatedAt(Instant.now());
 
-        BigDecimal amount = calculateMockAmount(items);
+        BigDecimal amount = calculateTotalFromProducts(items);
         order.setTotalAmount(amount);
         order = repo.save(order);
 
@@ -129,13 +131,28 @@ public class OrderService {
         return (qty == null || qty < 0) ? 0 : qty;
     }
 
-    private BigDecimal calculateMockAmount(List<OrderItem> items) {
-        int totalQty = items.stream()
-                .mapToInt(i -> safeQty(i.getQuantity()))
-                .sum();
+    private BigDecimal calculateTotalFromProducts(List<OrderItem> items) {
+        BigDecimal total = BigDecimal.ZERO;
 
-        // mock pricing: 100 per item
-        return BigDecimal.valueOf(totalQty).multiply(BigDecimal.valueOf(100));
+        // fetch each product only once
+        Map<String, ProductClient.ProductResponse> cache = new HashMap<>();
+
+        for (OrderItem item : items) {
+            String pid = item.getProductId();
+            int qty = safeQty(item.getQuantity());
+
+            if (qty <= 0) continue;
+
+            ProductClient.ProductResponse p = cache.computeIfAbsent(pid, productClient::getProduct);
+
+            if (p == null || p.price == null) {
+                throw new RuntimeException("Unable to fetch price for productId=" + pid);
+            }
+
+            total = total.add(p.price.multiply(BigDecimal.valueOf(qty)));
+        }
+
+        return total;
     }
 
     public Optional<OrderModel> getById(String id) {

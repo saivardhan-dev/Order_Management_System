@@ -11,7 +11,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,circuitbreakers
+  endpoint:
+      health:
+          show-details: always
 
 services:
   product:
@@ -28,6 +31,13 @@ resilience4j:
         minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
+        automatic-transition-from-open-to-half-open-enabled: true
+      paymentService:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        automatic-transition-from-open-to-half-open-enabled: true
   retry:
     instances:
       productService:

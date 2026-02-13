@@ -6,6 +6,7 @@ import com.microservices.payment_service.model.PaymentModel;
 import com.microservices.payment_service.model.PaymentStatus;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Service
@@ -21,12 +22,17 @@ public class PaymentService {
         boolean success;
         String reason = null;
 
+        BigDecimal limit = BigDecimal.valueOf(10000);
+
         if (req.getForceSuccess() != null) {
             success = req.getForceSuccess();
             if (!success) reason = "Forced failure (test)";
         } else {
-            success = req.getAmount().doubleValue() <= 10000.0;
-            if (!success) reason = "Mock rule: amount too high";
+            success = req.getAmount() != null
+                    && req.getAmount().compareTo(BigDecimal.ZERO) > 0
+                    && req.getAmount().compareTo(limit) <= 0;
+
+            if (!success) reason = "Mock rule: amount must be > 0 and <= 10000";
         }
 
         PaymentModel payment = new PaymentModel();
